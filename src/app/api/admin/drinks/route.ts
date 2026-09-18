@@ -8,19 +8,46 @@ function parseDrink(form: FormData) {
   const basePriceCents = Number(form.get("basePriceCents"));
 
   if (!name || !description || !Number.isInteger(basePriceCents) || basePriceCents < 0) return null;
-  return { name, description, basePriceCents };
+  const hasCustomizationConfig = form.has("seasonal") || form.getAll("addonIds").length > 0 || form.has("customizationsConfigured");
+  const addonIds = form.getAll("addonIds").map(String);
+  const defaultAddonIds = new Set(form.getAll("defaultAddonIds").map(String));
+  return {
+    name,
+    description,
+    basePriceCents,
+    hasCustomizationConfig,
+    seasonal: form.get("seasonal") === "true",
+    addonIds,
+    defaultAddonIds,
+  };
 }
 
 export async function GET() {
+  if (!(await isAdminRequestAuthorized())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const drinks = await prisma.drink.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } });
   return NextResponse.json(drinks);
 }
 
 export async function POST(request: Request) {
   if (!(await isAdminRequestAuthorized())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const drink = parseDrink(await request.formData());
+  const parsed = parseDrink(await request.formData());
+  const drink = parsed && {
+    name: parsed.name,
+    description: parsed.description,
+    basePriceCents: parsed.basePriceCents,
+    ...(parsed.hasCustomizationConfig ? { seasonal: parsed.seasonal, customizationsConfigured: true } : {}),
+    ...(parsed.hasCustomizationConfig ? {
+      customizations: {
+        create: parsed.addonIds.map((addonId) => ({ addon: { connect: { id: addonId } }, defaultSelected: parsed.defaultAddonIds.has(addonId) })),
+      },
+    } : {}),
+  };
   if (!drink) return NextResponse.json({ error: "Name, description, and a valid price are required." }, { status: 400 });
 
-  const created = await prisma.drink.create({ data: drink });
-  return NextResponse.json(created, { status: 201 });
+  try {
+    const created = await prisma.drink.create({ data: drink });
+    return NextResponse.json(created, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Could not save the drink. Make sure the selected customizations still exist." }, { status: 400 });
+  }
 }

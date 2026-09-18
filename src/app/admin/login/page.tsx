@@ -8,9 +8,9 @@ export default async function AdminLoginPage() {
   if (await isSessionTokenValid(token)) redirect("/admin");
 
   return <main className="auth-shell"><div className="auth-card">
-    <p className="eyebrow">BLOOM COFFEE</p>
+    <p className="eyebrow">SWEET LAVENDAR CAFE</p>
     <h1>Admin sign in</h1>
-    <p>Sign in to manage the Bloom Coffee menu.</p>
+    <p>Sign in to manage the Sweet Lavendar cafe menu.</p>
     <LoginForm />
   </div></main>;
 }
