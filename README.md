@@ -1,76 +1,76 @@
-# Bloom Coffee — Candidate Code Exercise
+# Bloom Coffee
 
-Welcome! This repo contains the exercise brief for **Bloom Coffee**, a small coffee-shop ordering app. Your job is to implement the stories below, deploy the app somewhere we can use it, and submit it for review. You may use any language, framework, or tools (including AI). We care about clarity, structure, and that it runs.
+Minimal Next.js scaffold for the Bloom Coffee ordering exercise. The customer menu and cart are implemented with integer-cent pricing, and the Prisma schema covers admins, drinks, add-ons, and orders.
 
-**Key docs:** [STORIES.md](STORIES.md) (stories & acceptance criteria) · [RUBRIC.md](RUBRIC.md) (what we look for when reviewing)
+## Run locally
 
----
+This project requires Node.js 20 or newer. When using WSL, install/use the Linux Node.js runtime inside WSL; the Windows Node installation is separate.
 
-## Submission — please read first (privacy)
-
-We know job-hunting is private. The flow below keeps your application invisible to anyone browsing your GitHub.
-
-1. **Click "Use this template"** (above the file list on this repo) to create your own copy. **Use the template button, not Fork** — a fork creates a public link back to Bloom Growth on your profile. The template button does not.
-2. **Make your new repo private** in the repo settings.
-3. (Optional but recommended) Use a GitHub account separate from your day-job account.
-4. Build your solution. When you're ready, open a PR **within your own repo** (feature branch → main) — we'll use it to review your changes diff-by-diff.
-5. **Invite our reviewer account** as a collaborator with read access on your private repo. The account to invite is: **`bloom-coffee-reviews`** _(replace with your actual reviewer account)_.
-6. Reply to Mike's email with: the **URL of your repo**, the **URL of your PR**, **admin login credentials** (or how to create an admin), and optionally your **tech stack** and any **trade-offs or decisions** you want us to know about.
-
-We will never link to or reference your repo publicly.
-
----
-
-## What we expect
-
-1. Implement the stories in [STORIES.md](STORIES.md).
-2. **Deploy** the app to a URL we can open (e.g. Vercel, Railway, Fly.io, your own server). No payment processing required.
-3. The **customer-facing flow** (menu, order, confirmation) should be **mobile-friendly**: usable and readable on both phone and desktop. Admin can be desktop-only if you prefer.
-4. Submit per the **Submission** section above.
-5. Our engineers will review your code and deployment. If we move forward, **Phase 2** will be a pairing session where you propose one or two features that would add business value to Bloom Coffee, we'll do a short planning together, and then you'll implement and deploy those with us.
-
-**Time:** We've scoped this for about **2–3 hours** of focused work. You're welcome to take longer if you'd like—we'd rather you finish at your pace than feel rushed. We've kept the scope intentional so you can complete it without an overwhelming commitment. Please submit within one week of receiving this exercise.
-
-**Questions?** Email Mike Benner at michael.b@bloomgrowth.com
-
----
-
-## What we look for
-
-Our engineers use a rubric when reviewing your submission. You can see what we evaluate and how we give feedback here: **[RUBRIC.md](RUBRIC.md)**.
-
----
-
-## How to run (your app)
-
-In your fork, replace this section with clear instructions for reviewers:
-
-- **Run locally:** How to install dependencies, set any required env vars, and start the app (e.g. `npm start`, `docker-compose up`).
-- **Deploy:** How you deployed it and the URL (or add the live URL in your PR description).
-- **Admin login:** Because sign-up is not required, provide either (a) the credentials to log into the admin section (e.g. username/password for a seed or default admin), or (b) exact steps to create an admin user so we can sign in and test the admin stories. Don't leave this out — we need to access the admin area to review your work.
-
----
-
-## Repo structure (suggestion)
-
-You don't have to follow this exactly; we only need to find the code and run it.
-
-```
-/
-├── README.md              # This file (update with your run/deploy instructions)
-├── STORIES.md             # Copy of the stories (for your reference; implementation is what we review)
-├── docs/                  # Optional: any extra notes or decisions
-├── <your-app>/            # Your choice: e.g. one app, or frontend/ + backend/
-│   └── ...
-└── ...
+```bash
+nvm install 20
+nvm use 20
+node --version   # should print v20.x or newer
 ```
 
-Use one repo; monorepo or single app is fine. Keep it simple enough that we can clone, install, and run without guessing.
+```bash
+npm install
+copy .env.example .env.local
+# Prisma CLI reads .env; copy the same local database settings for Prisma commands.
+copy .env.local .env
+npx prisma migrate dev --name init
+npm run dev
+```
 
----
+Next.js reads `.env.local`, while Prisma CLI reads `.env`. Keep both files locally with the same `DATABASE_URL` value. Replace the placeholder `DATABASE_URL` with a real PostgreSQL connection string before running the migration. In Git Bash, use `cp` instead of `copy`.
 
-## Stories
+Open http://localhost:3000.
 
-See **[STORIES.md](STORIES.md)** for the five stories and acceptance criteria. Implement all of them; the order in the file is a suggested sequence.
+```bash
+npm test                 # unit tests
+npx prisma generate      # regenerate the database client
+npm run build            # production build check
+```
 
-Good luck — we're looking forward to seeing what you build.
+The admin area is available at http://localhost:3000/admin. In local development, the default credentials are `admin@bloom.coffee` / `bloomcoffee`. Before deploying, set `ADMIN_EMAIL`, `ADMIN_PASSWORD` (at least 12 characters), and a random `AUTH_SECRET` (at least 32 characters) in the production environment. Production refuses authentication requests with missing or weak values; it never falls back to the demo credentials or development secret. Admin sessions use a signed, HTTP-only cookie and all `/admin/*` routes and admin API endpoints are protected.
+
+Generate a secure auth secret with one of these commands:
+
+```bash
+openssl rand -base64 32
+```
+
+In PowerShell:
+
+```powershell
+$bytes = [byte[]]::new(32)
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
+Copy the generated value into `AUTH_SECRET` in your deployment environment. Keep it private and do not commit it to Git.
+
+## GitHub Actions and Vercel
+
+`.github/workflows/test.yml` runs unit tests for pull requests targeting `dev` or `main`. Vercel handles deployments through its GitHub integration. Every branch other than `main` receives a Preview deployment; `main` is Production.
+
+### Vercel setup
+
+1. Import `ironvietman/bloom-coffee` into Vercel and select the repository root as the project root.
+2. Keep the framework preset as **Next.js**. The default build command (`npm run build`) is correct.
+3. In Vercel project **Settings → Environment Variables**, add these variables to both **Preview** and **Production**, using the appropriate values for each environment:
+   - `DATABASE_URL`
+   - `ADMIN_EMAIL`
+   - `ADMIN_PASSWORD`
+   - `AUTH_SECRET`
+4. Set the Vercel production branch to `main` under **Settings → Git**.
+5. Before using a new production database, apply the committed Prisma migrations from a machine with that database configured:
+
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+6. Push to any branch other than `main` for a Preview deployment, or merge the selected release branch to `main` for Production. Vercel will run the `vercel-build` script, which applies committed Prisma migrations before building the application.
+
+Vercel creates a Preview URL for each non-`main` branch. For a stable URL such as `feature.example.com`, configure a Vercel branch domain. The `main` branch updates the Production URL.
+
+See [STORIES.md](STORIES.md), [RUBRIC.md](RUBRIC.md), and [docs/TECHNICAL_PLAN.md](docs/TECHNICAL_PLAN.md) for the full exercise requirements and implementation plan.
