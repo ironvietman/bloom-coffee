@@ -1,0 +1,15 @@
+export type Addon = { id: string; name: string; priceCents: number };
+export type Drink = { id: string; name: string; description: string; basePriceCents: number };
+export type CartItem = { drink: Drink; addons: Addon[]; quantity: number };
+
+export function lineTotalCents(item: CartItem): number {
+  return (item.drink.basePriceCents + item.addons.reduce((sum, addon) => sum + addon.priceCents, 0)) * item.quantity;
+}
+
+export function orderTotalCents(items: CartItem[]): number {
+  return items.reduce((sum, item) => sum + lineTotalCents(item), 0);
+}
+
+export function formatMoney(cents: number): string {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
+}

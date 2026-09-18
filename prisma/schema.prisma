@@ -1,0 +1,9 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+
+model Admin { id String @id @default(cuid()); email String @unique; passwordHash String; createdAt DateTime @default(now()) }
+model Drink { id String @id @default(cuid()); name String; description String; basePriceCents Int; active Boolean @default(true); createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; items OrderItem[] }
+model Addon { id String @id @default(cuid()); name String; priceCents Int; active Boolean @default(true); createdAt DateTime @default(now()); items OrderItemAddon[] }
+model Order { id String @id @default(cuid()); customerName String; totalCents Int; createdAt DateTime @default(now()); items OrderItem[] }
+model OrderItem { id String @id @default(cuid()); orderId String; order Order @relation(fields: [orderId], references: [id]); drinkId String; drink Drink @relation(fields: [drinkId], references: [id]); drinkName String; unitPriceCents Int; quantity Int; addons OrderItemAddon[] }
+model OrderItemAddon { id String @id @default(cuid()); orderItemId String; orderItem OrderItem @relation(fields: [orderItemId], references: [id]); addonId String; addon Addon @relation(fields: [addonId], references: [id]); addonName String; priceCents Int }
