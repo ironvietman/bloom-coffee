@@ -182,6 +182,10 @@ The immediate confirmation includes:
 
 The customer can select **Order again**, which clears the cart and starts a fresh order. There is no public order lookup route. The admin dashboard also shows recent persisted orders, which is useful for review and pickup handling but is not required for customer authentication.
 
+### Admin recent-orders limit
+
+The admin dashboard intentionally displays only the 50 most recent orders, sorted newest first. The count displays `50+` when the limit is reached. All older orders remain stored in PostgreSQL, but the current UI does not provide pagination, search, filtering, or another way to browse them. This keeps the initial dashboard responsive as order volume grows; pagination or order-history filters can be added later if operational needs require access to older orders.
+
 ## Testing strategy
 
 The current tests intentionally focus on stable business logic and server behavior while the UI is still changing:

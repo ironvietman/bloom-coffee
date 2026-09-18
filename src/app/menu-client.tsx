@@ -106,7 +106,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
     return (
       <main className="shell confirmation-shell">
         <section className="confirmation-card" aria-labelledby="confirmation-title">
-          <p className="eyebrow">BLOOM COFFEE</p>
+          <p className="eyebrow">SWEET LAVENDAR CAFE</p>
           <h1 id="confirmation-title">Order received!</h1>
           <p>We&apos;ll call {confirmation.customerName} when your order is ready.</p>
           <p className="order-number">Order #{confirmation.orderId.slice(-8).toUpperCase()}</p>
@@ -129,9 +129,8 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
   return (
     <main className="shell">
       <header>
-        <p className="eyebrow">BLOOM COFFEE</p>
-        <h1>Good coffee, made bright.</h1>
-        <p>Order ahead for pickup.</p>
+        <h1 className="eyebrow">Sweet Lavendar cafe</h1>
+        <p>Order ahead for pickup. All drinks are 12 oz and available hot or cold.</p>
       </header>
 
       <section className="content" aria-label="Menu and order">

@@ -15,7 +15,7 @@ export default async function AdminPage() {
     include: { items: { include: { addons: true } } },
   });
   return <main className="admin-shell">
-    <header className="admin-header"><div><p className="eyebrow">BLOOM COFFEE</p><h1>Admin</h1><p>Manage your menu and keep the customer experience fresh.</p></div><LogoutButton /></header>
+    <header className="admin-header"><div><p className="eyebrow">SWEET LAVENDAR CAFE</p><h1>Admin</h1><p>Manage your menu and keep the customer experience fresh.</p></div><LogoutButton /></header>
     <nav className="admin-nav" aria-label="Admin sections"><a href="#menu-management">Menu management</a><a href="#past-orders">Past orders</a></nav>
     <div className="admin-management-grid" id="menu-management">
       <DrinkManager initialDrinks={drinks} />
