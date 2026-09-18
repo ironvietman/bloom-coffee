@@ -11,6 +11,10 @@
 .auth-form input { margin: 0; }
 .form-error { color: #a33b32; margin: 0; }
 .admin-header { display: flex; justify-content: space-between; align-items: start; gap: 24px; margin-bottom: 42px; }
+.admin-nav { display: flex; flex-wrap: wrap; gap: 10px; margin: -18px 0 36px; }
+.admin-nav a { color: var(--ink); border: 1px solid var(--line); border-radius: 999px; background: white; padding: 8px 14px; font-weight: 700; text-decoration: none; }
+.admin-nav a:hover { background: #eef3eb; }
+.admin-management-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 36px; align-items: start; }
 .admin-placeholder, .admin-form-card { border: 1px solid var(--line); border-radius: 18px; background: white; padding: 28px; }
 .admin-content { display: grid; gap: 36px; }
 .admin-form-card h2 { margin-bottom: 18px; }
@@ -26,6 +30,14 @@
 .admin-drink h3 { margin: 0; }
 .admin-drink p { margin: 6px 0; }
 .count { color: #839187; font: 600 1rem Arial, sans-serif; }
+.admin-orders { margin-top: 36px; }
+.order-list { display: grid; gap: 14px; }
+.order-card { border: 1px solid var(--line); border-radius: 18px; background: white; padding: 22px; }
+.order-card-header { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
+.order-card-header h3 { margin: 0; }
+.order-card-header p { margin: 6px 0 0; }
+.order-items { list-style: none; padding: 14px 0 0; margin: 14px 0 0; border-top: 1px solid var(--line); }
+.order-items li { display: flex; justify-content: space-between; gap: 16px; padding: 8px 0; }
 .customer-addons { display: grid; gap: 6px; margin: 14px 0 0; padding: 0; border: 0; }
 .customer-addons legend { padding: 0; font-weight: 700; }
 .customer-addons label { color: #627267; font-size: .9rem; font-weight: 400; }
@@ -47,3 +59,4 @@
 .confirmation-card > button { width: 100%; }
 @media (max-width: 520px) { .admin-header { display: block; } .admin-header button { margin-top: 18px; } }
 @media (max-width: 520px) { .admin-drink { display: block; } .admin-drink .form-actions { margin-top: 16px; } }
+@media (max-width: 800px) { .admin-management-grid { grid-template-columns: 1fr; gap: 28px; } }
