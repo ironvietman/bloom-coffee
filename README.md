@@ -26,7 +26,7 @@ npx prisma generate      # regenerate the database client
 npm run build            # production build check
 ```
 
-The current scaffold uses sample menu data in the UI. PostgreSQL and Prisma are ready for the persistence and admin stories to be wired in next. No admin credentials exist yet in this initial scaffold.
+The admin area is available at http://localhost:3000/admin. By default, use `admin@bloom.coffee` / `bloomcoffee`. Override these demo credentials in `.env.local` with `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and set a strong `AUTH_SECRET` before deploying. Admin sessions use a signed, HTTP-only cookie and all `/admin/*` routes are protected.
 
 ## GitHub Actions and Vercel
 
