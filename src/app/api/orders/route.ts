@@ -57,7 +57,9 @@ export async function POST(request: Request) {
     orderItems.push({ drink, validAddons, unitPriceCents, quantity: item.quantity, temperature });
   }
 
-  const order = await prisma.order.create({
+  let order: Awaited<ReturnType<typeof prisma.order.create>>;
+  try {
+    order = await prisma.order.create({
     data: {
       customerName,
       totalCents,
@@ -79,7 +81,11 @@ export async function POST(request: Request) {
       },
     },
     include: { items: { include: { addons: true } } },
-  });
+    });
+  } catch (error) {
+    console.error("Failed to create order", error);
+    return NextResponse.json({ error: "We could not place your order. Please try again." }, { status: 500 });
+  }
 
   return NextResponse.json({
     orderId: order.id,

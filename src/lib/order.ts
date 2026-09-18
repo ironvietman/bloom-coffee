@@ -15,6 +15,10 @@ export type Drink = {
 };
 export type CartItem = { drink: Drink; addons: Addon[]; quantity: number; temperature?: Temperature };
 
+export function temperatureLabel(temperature: Temperature): string {
+  return temperature === "HOT" ? "Hot" : "Cold";
+}
+
 export function lineTotalCents(item: CartItem): number {
   return (item.drink.basePriceCents + item.addons.reduce((sum, addon) => sum + addon.priceCents, 0)) * item.quantity;
 }

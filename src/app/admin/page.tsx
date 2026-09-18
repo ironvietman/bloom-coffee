@@ -2,7 +2,7 @@ import LogoutButton from "./logout-button";
 import DrinkManager from "./drinks/drink-manager";
 import { prisma } from "@/lib/prisma";
 import AddonManager from "./addons/addon-manager";
-import { formatMoney } from "@/lib/order";
+import { formatMoney, temperatureLabel } from "@/lib/order";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export default async function AdminPage() {
         {orders.length === 0 ? <div className="admin-placeholder"><p>No orders have been placed yet.</p></div> : <div className="order-list">
           {orders.map((order) => <article className="order-card" key={order.id}>
             <div className="order-card-header"><div><h3>Order #{order.id.slice(-8).toUpperCase()}</h3><p>{order.customerName} · {order.createdAt.toLocaleString()}</p></div><strong>{formatMoney(order.totalCents)}</strong></div>
-            <ul className="order-items">{order.items.map((item) => <li key={item.id}><span>{item.quantity}× {item.drinkName}<small>{item.addons.map((addon) => addon.addonName).join(", ") || "No customizations"}</small></span><strong>{formatMoney(item.unitPriceCents * item.quantity)}</strong></li>)}</ul>
+            <ul className="order-items">{order.items.map((item) => <li key={item.id}><span>{item.quantity}× {item.drinkName}<small className="temperature-label">{temperatureLabel(item.temperature)}</small><small>{item.addons.map((addon) => addon.addonName).join(", ") || "No customizations"}</small></span><strong>{formatMoney(item.unitPriceCents * item.quantity)}</strong></li>)}</ul>
           </article>)}
         </div>}
       </div>

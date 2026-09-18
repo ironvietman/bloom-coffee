@@ -60,7 +60,13 @@ export default function DrinkManager({ initialDrinks, addons }: { initialDrinks:
       setError(result?.error || "We could not save this drink.");
       return;
     }
-    const saved = await response.json() as Drink;
+    const bodyText = await response.text();
+    let saved: Drink | null = null;
+    try { saved = bodyText.trim() ? JSON.parse(bodyText) as Drink : null; } catch { saved = null; }
+    if (!saved) {
+      setError("The server returned an empty response. Please try again.");
+      return;
+    }
     const savedWithCustomizations = { ...saved, customizations: form.addonIds.map((id) => { const addon = availableAddons.find((item) => item.id === id); return addon ? { ...addon, defaultSelected: form.defaultAddonIds.includes(id) } : null; }).filter((addon): addon is Addon & { defaultSelected: boolean } => addon !== null) };
     setDrinks((current) => editingId ? current.map((drink) => drink.id === saved.id ? { ...drink, ...savedWithCustomizations } : drink) : [...current, savedWithCustomizations]);
     setForm(emptyForm); setEditingId(null);
