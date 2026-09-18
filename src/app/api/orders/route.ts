@@ -7,6 +7,7 @@ function isSubmittedItem(value: unknown): value is SubmittedItem {
   if (!value || typeof value !== "object") return false;
   const item = value as Record<string, unknown>;
   return typeof item.drinkId === "string"
+    && typeof item.quantity === "number"
     && Number.isInteger(item.quantity)
     && item.quantity > 0
     && item.quantity <= 99
