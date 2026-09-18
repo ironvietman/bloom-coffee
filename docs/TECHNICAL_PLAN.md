@@ -1,139 +1,222 @@
-# Bloom Coffee — Technical Plan
+# Bloom Coffee - Technical Plan
 
-This document records the proposed implementation approach and the decisions made during planning. The goal is to satisfy all five stories in a small, understandable application suitable for the interview exercise.
+This document records the implementation decisions for the Bloom Coffee exercise. The goal is a small, maintainable application that satisfies all five stories while keeping the customer and admin flows easy to review.
 
-## Recommended stack
+## Current stack
 
-- **Next.js with the App Router** for the customer and admin experiences in one application.
-- **TypeScript** for typed domain models and safer server/client boundaries.
-- **Tailwind CSS** for a responsive customer-facing UI.
+- **Next.js App Router** for the customer and admin experiences.
+- **TypeScript** for typed domain models and server/client boundaries.
+- **Plain CSS** for the responsive UI; Tailwind is not required for this scope.
 - **PostgreSQL** for persistent menu and order data.
-- **Prisma** for the database schema, migrations, and type-safe queries.
-- **bcrypt** for hashing the seeded admin password.
-- **HTTP-only signed cookie** for the admin session.
-- **Vitest** for unit tests, especially price and order-total calculations.
-- **Playwright** for a small number of critical end-to-end flows.
+- **Prisma** for the schema, migrations, and type-safe database queries.
+- **Vitest** for unit and API route-handler tests.
+- **HTTP-only signed cookies** for admin sessions.
+- **Playwright** is planned after the UI has stabilized; it is intentionally not required during active UI iteration.
 
-## Deployment
+## Deployment model
 
-The preferred deployment is:
+The deployment workflow is:
 
 ```text
-GitHub → Vercel → PostgreSQL provider
+GitHub -> Vercel -> PostgreSQL provider
 ```
 
-Vercel is the simplest fit for this exercise because it provides Git-based deployments, preview deployments, HTTPS, and serverless support with minimal infrastructure configuration.
+GitHub is connected to Vercel:
 
-The database should be a serverless PostgreSQL provider such as Neon, connected through the Vercel Marketplace or directly with environment variables. The database region should be close to the Vercel function region.
+- Every branch other than `main` produces a Vercel Preview deployment.
+- `main` is the Production branch and is updated after merging.
 
-GCP Cloud Run remains a valid alternative, but it would add Docker, Cloud Run, billing/project configuration, and more database setup. That infrastructure is not necessary for this exercise.
+Preview and Production use separate PostgreSQL databases so preview orders and menu changes cannot affect production data. Each Vercel environment has its own values for:
+
+```text
+DATABASE_URL
+ADMIN_EMAIL
+ADMIN_PASSWORD
+AUTH_SECRET
+```
+
+After a database is provisioned, apply the committed migrations against that database with:
+
+```bash
+npx prisma migrate deploy
+```
+
+The migration must be run once for the Preview database and once for the Production database. Vercel builds the application but does not automatically run database migrations.
+
+## Decision rationale
+
+### Why Vercel instead of GCP Cloud Run
+
+Vercel was chosen because this is a Next.js application already hosted in GitHub and the review workflow benefits from automatic deployments and Preview URLs. Vercel provides native Next.js builds, automatic Preview deployments for every non-`main` branch, a clear Production deployment from `main`, HTTPS, logs, and environment-variable management with minimal configuration.
+
+GCP Cloud Run would be reasonable for a larger or more infrastructure-controlled service, but it would require a container image, registry, service configuration, scaling and region decisions, database networking, and additional operational setup. That complexity would not improve the menu and ordering experience being evaluated here.
+
+### Why separate Preview and Production databases
+
+Preview deployments should be safe to test. Separate databases prevent test orders, menu edits, and migrations from changing production data. They also allow schema changes to be validated in Preview before being applied to Production.
+
+### Why PostgreSQL and Prisma
+
+The application needs persistent menu and order data, relational order items, and historical snapshots. PostgreSQL fits those relationships, while Prisma provides typed queries and committed migrations without requiring a large data-access layer.
+
+### Why integer cents
+
+Prices are stored as integer cents so totals do not depend on floating-point arithmetic. This makes calculations such as `$4.00 + $0.50 + $0.75` deterministic and easy to test.
+
+### Why soft-delete menu records
+
+Orders reference the drinks and add-ons available when the order was placed. Soft-deleting with `active: false` removes an item from the customer menu while preserving historical order information.
+
+### Why recalculate totals on the server
+
+The browser needs a responsive running total, but client data cannot be trusted for the final price. The order API reloads active menu records and calculates the persisted total from database prices, preventing stale or manipulated client prices from being stored.
+
+### Why environment-configured admin credentials
+
+The exercise only requires one admin and does not require sign-up, password reset, or multi-user administration. Environment-configured credentials keep the implementation small while production checks prevent missing or weak credentials and secrets. The existing `Admin` model leaves room for database-backed users later.
+
+### Why plain CSS instead of Tailwind
+
+The UI is small enough that a single stylesheet keeps the layout easy to inspect and avoids adding a styling dependency. The stylesheet includes responsive breakpoints for customer and admin screens.
+
+### Why Vitest now and Playwright later
+
+Business logic and route behavior are stable enough to test now, so Vitest covers totals, validation, authentication, authorization, and CRUD behavior. Playwright is intentionally deferred until the UI wording and layout settle, avoiding brittle browser tests during active UI iteration.
+
+### Why client-side cart state
+
+The cart is temporary customer interaction state, so keeping it in the client makes add-on editing, quantity changes, and running totals immediate without unnecessary server requests. The server remains authoritative when the order is submitted.
 
 ## Application areas
 
 ```text
-/                         Customer menu and cart
-/order/confirmation       Immediate order confirmation
+/                         Customer menu, customization, cart, and confirmation
 
 /admin/login              Admin login
-/admin                    Protected admin dashboard
-/admin/drinks             Drink CRUD
-/admin/addons             Add-on CRUD
-/admin/orders             Optional protected order list
+/admin                    Protected admin dashboard, menu management, and recent orders
+
+/api/orders               Public order submission endpoint
+/api/admin/login          Admin login endpoint
+/api/admin/logout         Admin logout endpoint
+/api/admin/drinks         Protected drink list/create endpoint
+/api/admin/drinks/[id]    Protected drink update/soft-delete endpoint
+/api/admin/addons         Protected add-on list/create endpoint
+/api/admin/addons/[id]    Protected add-on update/soft-delete endpoint
 ```
 
-Every admin mutation must be authorized on the server. Hiding admin controls in the UI is not sufficient protection.
+Every admin data page and admin data API endpoint is protected on the server; login and logout endpoints are the intentional exceptions. Hiding controls in the UI is not considered authorization.
 
-## Data model principles
+## Data model
 
-The core entities are:
+The Prisma schema contains:
 
-- Admin
-- Drink
-- Addon
-- Order
-- OrderItem
-- OrderItemAddon
+- `Admin` - retained as the domain model for future database-backed admins.
+- `Drink` - name, description, integer base price, and active status.
+- `Addon` - name, integer price, and active status.
+- `Order` - customer name, calculated total, and timestamp.
+- `OrderItem` - drink snapshot, unit price, and quantity.
+- `OrderItemAddon` - add-on snapshot and price.
 
-Order items should store snapshots of drink and add-on names and prices. This keeps historical orders accurate if an admin changes the menu later.
+Orders store snapshots of drink and add-on names and prices. This keeps historical orders correct if an admin later edits or removes a menu item.
 
-## Money handling decision
+## Money handling
 
-All monetary values will be stored and calculated as integer cents:
+All monetary values are stored and calculated as integer cents:
 
 ```text
 Drink.basePriceCents = 400
 Addon.priceCents = 50
-Order.totalCents = 525
+Order.totalCents = 450
 ```
 
-Forms may display dollars, but the server converts values to cents before saving. All arithmetic uses integers, and values are formatted as currency only when displayed. This avoids JavaScript floating-point rounding problems.
-
-The server recalculates the final order total from current database prices. Client-provided prices and totals are never trusted.
+Admin forms display dollars and convert to cents before saving. The client displays calculated totals for immediate feedback, but the order API recalculates the final total from active database records. Client-provided prices and totals are never trusted.
 
 ## Authentication and authorization
 
-There is no public sign-up flow. A seeded admin user will be provided through documented setup instructions or environment variables.
+There is no public sign-up or password-reset flow. Local development has documented demo credentials. Production requires explicitly configured values:
 
-- Passwords are stored as hashes, never plaintext.
-- Successful login creates a signed, HTTP-only session cookie.
-- Unauthenticated admin page requests redirect to `/admin/login`.
-- Unauthenticated admin mutations return an unauthorized response.
-- Logout clears the session cookie.
+- `ADMIN_EMAIL`
+- `ADMIN_PASSWORD` with at least 12 characters
+- `AUTH_SECRET` with at least 32 characters
 
-## Customer orders and privacy
+Production does not fall back to the local demo credentials or development secret when these values are missing or too short. A random secret can be generated with `openssl rand -base64 32` or the PowerShell command in the README.
 
-Orders will be persisted as records of submitted orders. This supports reliable submission and optionally allows admins to view an order list.
+The auth flow is:
 
-The customer receives a readable order number, such as `#1047`, in the immediate confirmation view. The order number is for reference and is not a public lookup credential.
+1. The login endpoint validates the configured email and password.
+2. Successful login creates a signed, HTTP-only, same-site session cookie.
+3. Middleware redirects unauthenticated `/admin/*` page requests to `/admin/login`.
+4. Admin API handlers independently validate the session before reading or mutating admin data.
+5. Logout clears the session cookie.
 
-We will not expose a public route that lets anyone retrieve an order by guessing a sequential order ID. Customer authentication, emailed receipts, SMS verification, and public confirmation links are outside the scope of this exercise.
+The current exercise uses environment-configured credentials rather than password hashing or a database user-management flow. The `Admin` model remains available if multi-user administration is added later.
 
-## Confirmation and ordering again
+## Menu management
 
-The required confirmation experience is an immediate post-submit view containing:
+Admins can create, edit, and soft-delete drinks and add-ons. Deletes set `active` to `false` instead of removing rows, preserving relationships with historical orders. Customer menu queries only return active records, so deleted items no longer appear to customers.
 
-- Order ID
-- Customer name
-- Drinks and add-ons
-- Quantities
-- Total
+Validation rejects blank names, missing drink descriptions, negative prices, fractional cent values, and other invalid form data. The API route tests cover authorization, validation, creation, updates, and soft-deletes.
 
-The customer can then choose **Order again** or **Back to menu**. A new order starts with a fresh cart. A public confirmation link or random access token is not needed for the required stories and will not be implemented unless the scope changes.
+## Customer ordering flow
 
-## Optional order list
+The customer flow is intentionally public and does not require an account:
 
-An admin-only order list may be added if time allows. It can show order number, customer name, items, total, and timestamp. This is optional in the stories and should not take priority over the required customer flow, authentication, and CRUD functionality.
+1. View active drinks and add-ons.
+2. Select add-ons before adding a drink to the cart.
+3. Add multiple drinks, including multiple lines for the same drink with different customizations.
+4. Edit add-ons after a drink is already in the cart.
+5. Change quantities or remove cart lines.
+6. See line totals and the running order total update immediately.
+7. Enter a pickup name and submit the order.
 
-## Testing priorities
+Cart state is client-side for responsiveness. The order endpoint validates the request, reloads active drinks/add-ons from the database, recalculates prices, persists the order, and returns a confirmation payload.
 
-Tests should focus on the highest-value behavior:
+## Confirmation and order history
 
-- Base price plus add-on price calculations
-- Quantity changes and item removal
-- Server-side total calculation
-- Invalid and valid admin login
-- Admin route protection
-- Drink and add-on CRUD
-- Successful order submission and confirmation contents
+The immediate confirmation includes:
 
-## Implementation sequence
+- A readable order ID derived from the persisted unique order ID.
+- Customer name.
+- Drinks, add-ons, and quantities.
+- Total.
 
-1. Create the Next.js application and responsive layout.
-2. Add the Prisma schema, migrations, and seed data.
-3. Implement the customer menu, customization flow, and cart.
-4. Implement server-side total calculation and order submission.
-5. Add admin authentication and protected routes.
-6. Add drink and add-on CRUD.
-7. Add the confirmation view and Order again flow.
-8. Add focused automated tests.
-9. Deploy to Vercel and document local setup, environment variables, admin credentials, and the live URL.
+The customer can select **Order again**, which clears the cart and starts a fresh order. There is no public order lookup route. The admin dashboard also shows recent persisted orders, which is useful for review and pickup handling but is not required for customer authentication.
 
-## Explicitly out of scope
+## Testing strategy
 
-- Payment processing
-- Customer accounts
-- Customer order history across devices
-- Public order lookup
-- Password reset and admin sign-up
-- Production-scale GCP infrastructure
+The current tests intentionally focus on stable business logic and server behavior while the UI is still changing:
 
+- `src/lib/order.test.ts` tests line and order totals.
+- `src/lib/order-request.test.ts` tests request validation and quantity/name boundaries.
+- `src/lib/auth.test.ts` tests valid/invalid credentials, session signing, tamper rejection, and production configuration requirements.
+- Admin route tests mock Prisma and test authorization, validation, create, update, and soft-delete behavior for drinks and add-ons.
+
+The standard command is:
+
+```bash
+npm test
+```
+
+After the UI stabilizes, add a small Playwright smoke-test suite for the highest-value journeys: customer ordering and admin menu management. Playwright is deferred to avoid coupling tests to UI labels and layout during active design changes.
+
+## Implementation status
+
+The five required stories are implemented:
+
+1. Admin login and protected routes.
+2. Drink CRUD.
+3. Add-on CRUD.
+4. Responsive customer menu, customization, cart editing, and running totals.
+5. Order submission, persisted order ID, confirmation, and ordering again.
+
+Remaining release work is operational rather than a new story: finish UI polish, run `npm test` and `npm run build` locally, manually smoke-test a Preview deployment, configure production environment variables, migrate the Production database, and merge the selected release branch into `main` when ready.
+
+## Out of scope
+
+- Payment processing.
+- Customer accounts.
+- Customer order history across devices.
+- Public order lookup.
+- Password reset and public admin sign-up.
+- Multi-user database-backed admin management.
+- Production-scale GCP infrastructure.
