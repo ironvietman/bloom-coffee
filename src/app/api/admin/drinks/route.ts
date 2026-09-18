@@ -12,6 +12,7 @@ function parseDrink(form: FormData) {
 }
 
 export async function GET() {
+  if (!(await isAdminRequestAuthorized())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const drinks = await prisma.drink.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } });
   return NextResponse.json(drinks);
 }

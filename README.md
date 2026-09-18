@@ -31,7 +31,23 @@ npx prisma generate      # regenerate the database client
 npm run build            # production build check
 ```
 
-The admin area is available at http://localhost:3000/admin. By default, use `admin@bloom.coffee` / `bloomcoffee`. Override these demo credentials in `.env.local` with `ADMIN_EMAIL`, `ADMIN_PASSWORD`, and set a strong `AUTH_SECRET` before deploying. Admin sessions use a signed, HTTP-only cookie and all `/admin/*` routes are protected.
+The admin area is available at http://localhost:3000/admin. In local development, the default credentials are `admin@bloom.coffee` / `bloomcoffee`. Before deploying, set `ADMIN_EMAIL`, `ADMIN_PASSWORD` (at least 12 characters), and a random `AUTH_SECRET` (at least 32 characters) in the production environment. Production refuses authentication requests with missing or weak values; it never falls back to the demo credentials or development secret. Admin sessions use a signed, HTTP-only cookie and all `/admin/*` routes and admin API endpoints are protected.
+
+Generate a secure auth secret with one of these commands:
+
+```bash
+openssl rand -base64 32
+```
+
+In PowerShell:
+
+```powershell
+$bytes = [byte[]]::new(32)
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
+```
+
+Copy the generated value into `AUTH_SECRET` in your deployment environment. Keep it private and do not commit it to Git.
 
 ## GitHub Actions and Vercel
 

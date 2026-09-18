@@ -1,8 +1,17 @@
 export const SESSION_COOKIE = "bloom_admin_session";
 const SESSION_MAX_AGE = 60 * 60 * 8;
 
+function productionValue(name: string, value: string | undefined, minimumLength?: number) {
+  if (process.env.NODE_ENV !== "production") return value;
+  if (!value) throw new Error(`${name} must be configured in production.`);
+  if (minimumLength && value.length < minimumLength) {
+    throw new Error(`${name} must be at least ${minimumLength} characters in production.`);
+  }
+  return value;
+}
+
 function secret() {
-  return process.env.AUTH_SECRET || "bloom-development-secret-change-me";
+  return productionValue("AUTH_SECRET", process.env.AUTH_SECRET, 32) || "bloom-development-secret-change-me";
 }
 
 function base64url(bytes: Uint8Array) {
@@ -16,8 +25,8 @@ async function sign(value: string) {
 
 export function configuredAdminCredentials() {
   return {
-    email: process.env.ADMIN_EMAIL || "admin@bloom.coffee",
-    password: process.env.ADMIN_PASSWORD || "bloomcoffee",
+    email: productionValue("ADMIN_EMAIL", process.env.ADMIN_EMAIL) || "admin@bloom.coffee",
+    password: productionValue("ADMIN_PASSWORD", process.env.ADMIN_PASSWORD, 12) || "bloomcoffee",
   };
 }
 

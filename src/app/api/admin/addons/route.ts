@@ -10,6 +10,7 @@ function parseAddon(form: FormData) {
 }
 
 export async function GET() {
+  if (!(await isAdminRequestAuthorized())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const addons = await prisma.addon.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } });
   return NextResponse.json(addons);
 }
