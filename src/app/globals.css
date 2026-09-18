@@ -26,5 +26,9 @@
 .admin-drink h3 { margin: 0; }
 .admin-drink p { margin: 6px 0; }
 .count { color: #839187; font: 600 1rem Arial, sans-serif; }
+.customer-addons { display: grid; gap: 6px; margin-top: 14px; }
+.customer-addons p { margin: 0; font-weight: 700; }
+.customer-addons label { color: #627267; font-size: .9rem; font-weight: 400; }
+.customer-addons input { width: auto; margin: 0 5px 0 0; }
 @media (max-width: 520px) { .admin-header { display: block; } .admin-header button { margin-top: 18px; } }
 @media (max-width: 520px) { .admin-drink { display: block; } .admin-drink .form-actions { margin-top: 16px; } }
