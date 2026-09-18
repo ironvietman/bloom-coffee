@@ -1,5 +1,15 @@
-export type Addon = { id: string; name: string; priceCents: number };
-export type Drink = { id: string; name: string; description: string; basePriceCents: number };
+export type AddonCategory = "MILK" | "SYRUP" | "EXTRA" | "OTHER";
+export type Addon = { id: string; name: string; priceCents: number; category?: AddonCategory };
+export type DrinkCustomization = Addon & { defaultSelected: boolean };
+export type Drink = {
+  id: string;
+  name: string;
+  description: string;
+  basePriceCents: number;
+  seasonal?: boolean;
+  customizationsConfigured?: boolean;
+  customizations?: DrinkCustomization[];
+};
 export type CartItem = { drink: Drink; addons: Addon[]; quantity: number };
 
 export function lineTotalCents(item: CartItem): number {

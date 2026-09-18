@@ -19,7 +19,10 @@ export async function POST(request: Request) {
   const drinkIds = [...new Set(submittedItems.map((item) => item.drinkId))];
   const addonIds = [...new Set(submittedItems.flatMap((item) => item.addonIds || []))];
   const [drinks, addons] = await Promise.all([
-    prisma.drink.findMany({ where: { id: { in: drinkIds }, active: true } }),
+    prisma.drink.findMany({
+      where: { id: { in: drinkIds }, active: true },
+      include: { customizations: { include: { addon: true } } },
+    }),
     addonIds.length > 0 ? prisma.addon.findMany({ where: { id: { in: addonIds }, active: true } }) : [],
   ]);
 
@@ -36,6 +39,15 @@ export async function POST(request: Request) {
     }
 
     const validAddons = selectedAddons.filter((addon) => addon !== undefined);
+    const configuredAddonIds = new Set(drink.customizations.map((customization) => customization.addonId));
+    if (drink.customizationsConfigured && validAddons.some((addon) => !configuredAddonIds.has(addon.id))) {
+      return NextResponse.json({ error: "One or more customizations are not available for this drink." }, { status: 409 });
+    }
+    const milkCount = validAddons.filter((addon) => addon.category === "MILK").length;
+    const nonMilkCount = validAddons.filter((addon) => addon.category !== "MILK").length;
+    if (milkCount > 1 || nonMilkCount > 5) {
+      return NextResponse.json({ error: "Please choose no more than one milk and five other customizations." }, { status: 400 });
+    }
     const unitPriceCents = drink.basePriceCents + validAddons.reduce((sum, addon) => sum + addon.priceCents, 0);
     totalCents += unitPriceCents * item.quantity;
     orderItems.push({ drink, validAddons, unitPriceCents, quantity: item.quantity });

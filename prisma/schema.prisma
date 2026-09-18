@@ -7,6 +7,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum AddonCategory {
+  MILK
+  SYRUP
+  EXTRA
+  OTHER
+}
+
 model Admin {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -19,19 +26,34 @@ model Drink {
   name           String
   description    String
   basePriceCents Int
+  seasonal       Boolean     @default(false)
+  customizationsConfigured Boolean @default(false)
   active         Boolean     @default(true)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
   items          OrderItem[]
+  customizations DrinkAddon[]
 }
 
 model Addon {
   id         String           @id @default(cuid())
   name       String
   priceCents Int
+  category   AddonCategory     @default(OTHER)
   active     Boolean          @default(true)
   createdAt  DateTime         @default(now())
   items      OrderItemAddon[]
+  drinks     DrinkAddon[]
+}
+
+model DrinkAddon {
+  drinkId        String
+  addonId        String
+  defaultSelected Boolean @default(false)
+  drink          Drink   @relation(fields: [drinkId], references: [id], onDelete: Cascade)
+  addon          Addon   @relation(fields: [addonId], references: [id], onDelete: Cascade)
+
+  @@id([drinkId, addonId])
 }
 
 model Order {

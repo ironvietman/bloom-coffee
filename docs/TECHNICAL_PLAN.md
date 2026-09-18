@@ -111,8 +111,9 @@ Every admin data page and admin data API endpoint is protected on the server; lo
 The Prisma schema contains:
 
 - `Admin` - retained as the domain model for future database-backed admins.
-- `Drink` - name, description, integer base price, and active status.
-- `Addon` - name, integer price, and active status.
+- `Drink` - name, description, integer base price, seasonal flag, and active status.
+- `Addon` - name, integer price, customization category, and active status.
+- `DrinkAddon` - the customizations available for a drink and which are selected by default.
 - `Order` - customer name, calculated total, and timestamp.
 - `OrderItem` - drink snapshot, unit price, and quantity.
 - `OrderItemAddon` - add-on snapshot and price.
@@ -168,6 +169,8 @@ The customer flow is intentionally public and does not require an account:
 5. Change quantities or remove cart lines.
 6. See line totals and the running order total update immediately.
 7. Enter a pickup name and submit the order.
+
+The menu separates seasonal drinks from the standard menu. Each drink has a **Customize** action that reveals its configured customization options. Milk is a single-choice customization; syrups, extras, and other options share a maximum of five selections. Standard drink customizations may be preselected, while customers can add or remove options before adding the drink to the cart. Cart lines retain their drink-specific customization list and can be edited after being added.
 
 Cart state is client-side for responsiveness. The order endpoint validates the request, reloads active drinks/add-ons from the database, recalculates prices, persists the order, and returns a confirmation payload.
 
