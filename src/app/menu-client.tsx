@@ -3,9 +3,24 @@
 import { useMemo, useState } from "react";
 import { formatMoney, lineTotalCents, orderTotalCents, type Addon, type CartItem, type Drink } from "@/lib/order";
 
+type Confirmation = {
+  orderId: string;
+  customerName: string;
+  totalCents: number;
+  items: Array<{
+    drinkName: string;
+    quantity: number;
+    unitPriceCents: number;
+    addons: Array<{ name: string; priceCents: number }>;
+  }>;
+};
+
 export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons: Addon[] }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [name, setName] = useState("");
+  const [confirmation, setConfirmation] = useState<Confirmation | null>(null);
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<Record<string, Addon[]>>({});
   const total = useMemo(() => orderTotalCents(cart), [cart]);
 
@@ -32,6 +47,66 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
         ? [...(current[drinkId] || []), addon]
         : (current[drinkId] || []).filter((item) => item.id !== addon.id),
     }));
+  }
+
+  async function submitOrder() {
+    if (!name.trim() || cart.length === 0 || isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmitError("");
+
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: name.trim(),
+          items: cart.map((item) => ({
+            drinkId: item.drink.id,
+            addonIds: item.addons.map((addon) => addon.id),
+            quantity: item.quantity,
+          })),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "We could not submit your order.");
+      setConfirmation(result as Confirmation);
+      setCart([]);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "We could not submit your order.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function startNewOrder() {
+    setConfirmation(null);
+    setName("");
+    setSubmitError("");
+    setSelectedAddons({});
+  }
+
+  if (confirmation) {
+    return (
+      <main className="shell confirmation-shell">
+        <section className="confirmation-card" aria-labelledby="confirmation-title">
+          <p className="eyebrow">BLOOM COFFEE</p>
+          <h1 id="confirmation-title">Order received!</h1>
+          <p>We&apos;ll call {confirmation.customerName} when your order is ready.</p>
+          <p className="order-number">Order #{confirmation.orderId.slice(-8).toUpperCase()}</p>
+          <div className="confirmation-summary">
+            <h2>Your order</h2>
+            {confirmation.items.map((item, index) => (
+              <div className="confirmation-line" key={`${item.drinkName}-${index}`}>
+                <span><strong>{item.quantity}× {item.drinkName}</strong><small>{item.addons.map((addon) => addon.name).join(", ") || "No add-ons"}</small></span>
+                <strong>{formatMoney(item.unitPriceCents * item.quantity)}</strong>
+              </div>
+            ))}
+            <div className="total"><strong>Total</strong><strong>{formatMoney(confirmation.totalCents)}</strong></div>
+          </div>
+          <button type="button" onClick={startNewOrder}>Order again</button>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -115,7 +190,10 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
                 Name for pickup
                 <input value={name} onChange={(event) => setName(event.target.value)} placeholder="e.g. Jordan" />
               </label>
-              <button type="button" className="submit" disabled={!name.trim()} onClick={() => alert("Order received! Your confirmation number is #1001.")}>Place order</button>
+              {submitError && <p className="form-error" role="alert">{submitError}</p>}
+              <button type="button" className="submit" disabled={!name.trim() || isSubmitting} onClick={submitOrder}>
+                {isSubmitting ? "Sending order…" : "Place order"}
+              </button>
             </>
           )}
         </aside>
