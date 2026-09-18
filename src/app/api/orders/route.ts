@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { parseOrderRequest, type SubmittedItem } from "@/lib/order-request";
 
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
     orderItems.push({ drink, validAddons, unitPriceCents, quantity: item.quantity, temperature });
   }
 
-  let order: Awaited<ReturnType<typeof prisma.order.create>>;
+  let order: Prisma.OrderGetPayload<{ include: { items: { include: { addons: true } } } }>;
   try {
     order = await prisma.order.create({
     data: {
