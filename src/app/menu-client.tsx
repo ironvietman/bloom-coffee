@@ -22,6 +22,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<Record<string, Addon[]>>({});
+  const [editingCartIndex, setEditingCartIndex] = useState<number | null>(null);
   const total = useMemo(() => orderTotalCents(cart), [cart]);
 
   function add(drink: Drink) {
@@ -29,6 +30,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
   }
 
   function changeQuantity(index: number, amount: number) {
+    if (amount < 0 && cart[index]?.quantity + amount <= 0) setEditingCartIndex(null);
     setCart((current) => current.flatMap((item, itemIndex) => {
       if (itemIndex !== index) return item;
       const quantity = item.quantity + amount;
@@ -38,6 +40,19 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
 
   function removeItem(index: number) {
     setCart((current) => current.filter((_, itemIndex) => itemIndex !== index));
+    setEditingCartIndex(null);
+  }
+
+  function toggleCartAddon(index: number, addon: Addon, checked: boolean) {
+    setCart((current) => current.map((item, itemIndex) => {
+      if (itemIndex !== index) return item;
+      return {
+        ...item,
+        addons: checked
+          ? [...item.addons, addon]
+          : item.addons.filter((itemAddon) => itemAddon.id !== addon.id),
+      };
+    }));
   }
 
   function toggleAddon(drinkId: string, addon: Addon, checked: boolean) {
@@ -71,6 +86,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
       if (!response.ok) throw new Error(result.error || "We could not submit your order.");
       setConfirmation(result as Confirmation);
       setCart([]);
+      setEditingCartIndex(null);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "We could not submit your order.");
     } finally {
@@ -83,6 +99,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
     setName("");
     setSubmitError("");
     setSelectedAddons({});
+    setEditingCartIndex(null);
   }
 
   if (confirmation) {
@@ -170,12 +187,36 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
                     <div>
                       <strong>{item.drink.name}</strong>
                       <small>{item.addons.map((addon) => addon.name).join(", ") || "No add-ons"}</small>
+                      {editingCartIndex === index && addons.length > 0 && (
+                        <fieldset className="cart-addons">
+                          <legend>Edit add-ons</legend>
+                          {addons.map((addon) => (
+                            <label key={addon.id}>
+                              <input
+                                type="checkbox"
+                                checked={item.addons.some((itemAddon) => itemAddon.id === addon.id)}
+                                onChange={(event) => toggleCartAddon(index, addon, event.target.checked)}
+                              />
+                              {addon.name} <span>+{formatMoney(addon.priceCents)}</span>
+                            </label>
+                          ))}
+                        </fieldset>
+                      )}
                       <span className="line-total">{formatMoney(lineTotalCents(item))}</span>
                     </div>
                     <div className="quantity-controls" aria-label={`Quantity for ${item.drink.name}`}>
                       <button type="button" aria-label={`Decrease ${item.drink.name}`} onClick={() => changeQuantity(index, -1)}>−</button>
                       <span aria-live="polite">{item.quantity}</span>
                       <button type="button" aria-label={`Increase ${item.drink.name}`} onClick={() => changeQuantity(index, 1)}>+</button>
+                      {addons.length > 0 && (
+                        <button
+                          type="button"
+                          className="edit-addons"
+                          onClick={() => setEditingCartIndex(editingCartIndex === index ? null : index)}
+                        >
+                          {editingCartIndex === index ? "Done" : "Edit add-ons"}
+                        </button>
+                      )}
                       <button type="button" className="remove" onClick={() => removeItem(index)}>Remove</button>
                     </div>
                   </div>

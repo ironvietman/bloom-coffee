@@ -43,6 +43,11 @@
 .customer-addons label { color: #627267; font-size: .9rem; font-weight: 400; }
 .customer-addons input { width: auto; margin: 0 5px 0 0; }
 .customer-addons span { color: #839187; }
+.cart-addons { display: grid; gap: 6px; margin: 10px 0 0; padding: 10px 0 0; border: 0; border-top: 1px solid var(--line); }
+.cart-addons legend { padding: 0; font-weight: 700; font-size: .9rem; }
+.cart-addons label { color: #627267; font-size: .9rem; font-weight: 400; }
+.cart-addons input { width: auto; margin: 0 5px 0 0; }
+.cart-addons span { color: #839187; }
 .customized-price { margin: 10px 0 0; font-size: .9rem; }
 .line-total { display: block; margin-top: 4px; font-weight: 700; }
 .quantity-controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
