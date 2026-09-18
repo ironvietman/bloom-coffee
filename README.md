@@ -30,10 +30,16 @@ The current scaffold uses sample menu data in the UI. PostgreSQL and Prisma are 
 
 ## GitHub Actions and Vercel
 
-`.github/workflows/test.yml` runs unit tests for pull requests targeting `dev` or `main`.
+`.github/workflows/test.yml` runs unit tests for pull requests targeting `dev` or `main`. Vercel handles deployments through its GitHub integration. Add `DATABASE_URL` to the Vercel `Preview` and `Production` environments when database-backed routes are enabled.
 
-`.github/workflows/vercel.yml` deploys a Vercel preview whenever `dev` receives a commit and deploys production whenever `main` receives a commit. Configure one Vercel project and add these GitHub Actions secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`. Add `DATABASE_URL` to the matching Vercel environment when database-backed routes are enabled.
+### Vercel setup
 
-The `dev` workflow produces a preview URL. For a stable URL such as `dev.example.com`, configure a Vercel branch domain. The `main` workflow updates the project’s production URL.
+1. Import `ironvietman/bloom-coffee` into Vercel and select the repository root as the project root.
+2. Keep the framework preset as **Next.js**. The default build command (`npm run build`) is correct.
+3. In Vercel project **Settings → Environment Variables**, add `DATABASE_URL` to **Preview** and **Production** with the connection string for the corresponding database.
+4. Set the Vercel production branch to `main` under **Settings → Git**.
+5. Push to `dev` for a preview deployment or `main` for production. Vercel will build and deploy automatically.
+
+Vercel creates a preview URL for `dev`. For a stable URL such as `dev.example.com`, configure a Vercel branch domain. The `main` branch updates the production URL.
 
 See [STORIES.md](STORIES.md), [RUBRIC.md](RUBRIC.md), and [docs/TECHNICAL_PLAN.md](docs/TECHNICAL_PLAN.md) for the full exercise requirements and implementation plan.
