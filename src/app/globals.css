@@ -11,5 +11,20 @@
 .auth-form input { margin: 0; }
 .form-error { color: #a33b32; margin: 0; }
 .admin-header { display: flex; justify-content: space-between; align-items: start; gap: 24px; margin-bottom: 42px; }
-.admin-placeholder { border: 1px solid var(--line); border-radius: 18px; background: white; padding: 28px; }
+.admin-placeholder, .admin-form-card { border: 1px solid var(--line); border-radius: 18px; background: white; padding: 28px; }
+.admin-content { display: grid; gap: 36px; }
+.admin-form-card h2 { margin-bottom: 18px; }
+.drink-form { display: grid; gap: 16px; max-width: 620px; }
+.drink-form label { display: grid; gap: 6px; font-weight: 700; }
+.drink-form input, .drink-form textarea { margin: 0; width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: inherit; }
+.drink-form textarea { resize: vertical; }
+.form-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.secondary { background: #eef3eb; color: var(--ink); }
+.danger { background: #a33b32; }
+.admin-drinks { display: grid; gap: 14px; }
+.admin-drink { display: flex; justify-content: space-between; align-items: center; gap: 18px; border: 1px solid var(--line); border-radius: 18px; background: white; padding: 22px; }
+.admin-drink h3 { margin: 0; }
+.admin-drink p { margin: 6px 0; }
+.count { color: #839187; font: 600 1rem Arial, sans-serif; }
 @media (max-width: 520px) { .admin-header { display: block; } .admin-header button { margin-top: 18px; } }
+@media (max-width: 520px) { .admin-drink { display: block; } .admin-drink .form-actions { margin-top: 16px; } }
