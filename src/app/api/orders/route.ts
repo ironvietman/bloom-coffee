@@ -1,18 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-type SubmittedItem = { drinkId: string; addonIds?: string[]; quantity: number };
-
-function isSubmittedItem(value: unknown): value is SubmittedItem {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Record<string, unknown>;
-  return typeof item.drinkId === "string"
-    && typeof item.quantity === "number"
-    && Number.isInteger(item.quantity)
-    && item.quantity > 0
-    && item.quantity <= 99
-    && (item.addonIds === undefined || (Array.isArray(item.addonIds) && item.addonIds.every((id) => typeof id === "string")));
-}
+import { parseOrderRequest, type SubmittedItem } from "@/lib/order-request";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -22,16 +10,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid order request." }, { status: 400 });
   }
 
-  if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid order request." }, { status: 400 });
-  const data = body as Record<string, unknown>;
-  const customerName = typeof data.customerName === "string" ? data.customerName.trim() : "";
-  const items = Array.isArray(data.items) ? data.items : [];
-
-  if (!customerName || customerName.length > 80 || items.length === 0 || !items.every(isSubmittedItem)) {
+  const parsed = parseOrderRequest(body);
+  if (!parsed) {
     return NextResponse.json({ error: "A name and at least one valid item are required." }, { status: 400 });
   }
 
-  const submittedItems = items as SubmittedItem[];
+  const { customerName, items: submittedItems } = parsed;
   const drinkIds = [...new Set(submittedItems.map((item) => item.drinkId))];
   const addonIds = [...new Set(submittedItems.flatMap((item) => item.addonIds || []))];
   const [drinks, addons] = await Promise.all([
