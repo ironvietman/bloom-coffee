@@ -1,4 +1,4 @@
-export type SubmittedItem = { drinkId: string; addonIds?: string[]; quantity: number };
+export type SubmittedItem = { drinkId: string; addonIds?: string[]; quantity: number; temperature?: "HOT" | "COLD" };
 
 export type ParsedOrderRequest = {
   customerName: string;
@@ -13,6 +13,7 @@ export function isSubmittedItem(value: unknown): value is SubmittedItem {
     && Number.isInteger(item.quantity)
     && item.quantity > 0
     && item.quantity <= 99
+    && (item.temperature === undefined || item.temperature === "HOT" || item.temperature === "COLD")
     && (item.addonIds === undefined || (Array.isArray(item.addonIds) && item.addonIds.every((id) => typeof id === "string")));
 }
 

@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { formatMoney, type Addon, type Drink } from "@/lib/order";
 
-type DrinkForm = { name: string; description: string; price: string; seasonal: boolean; addonIds: string[]; defaultAddonIds: string[] };
-const emptyForm: DrinkForm = { name: "", description: "", price: "", seasonal: false, addonIds: [], defaultAddonIds: [] };
+type DrinkForm = { name: string; description: string; price: string; seasonal: boolean; supportsHot: boolean; supportsCold: boolean; addonIds: string[]; defaultAddonIds: string[] };
+const emptyForm: DrinkForm = { name: "", description: "", price: "", seasonal: false, supportsHot: true, supportsCold: true, addonIds: [], defaultAddonIds: [] };
 const categoryLabels = { MILK: "Milk", SYRUP: "Syrup", EXTRA: "Extra", OTHER: "Other" } as const;
 
 function toForm(drink?: Drink): DrinkForm {
@@ -15,6 +15,8 @@ function toForm(drink?: Drink): DrinkForm {
     description: drink.description,
     price: (drink.basePriceCents / 100).toFixed(2),
     seasonal: Boolean(drink.seasonal),
+    supportsHot: drink.supportsHot !== false,
+    supportsCold: drink.supportsCold !== false,
     addonIds: (drink.customizations || []).map((addon) => addon.id),
     defaultAddonIds: [...defaultCustomizations.filter((addon) => addon.category !== "MILK").map((addon) => addon.id), ...(defaultMilk ? [defaultMilk.id] : [])],
   } : emptyForm;
@@ -47,6 +49,8 @@ export default function DrinkManager({ initialDrinks, addons }: { initialDrinks:
     body.set("description", form.description);
     body.set("basePriceCents", String(Math.round(Number(form.price) * 100)));
     body.set("seasonal", String(form.seasonal));
+    body.set("supportsHot", String(form.supportsHot));
+    body.set("supportsCold", String(form.supportsCold));
     body.set("customizationsConfigured", "true");
     form.addonIds.forEach((id) => body.append("addonIds", id));
     form.defaultAddonIds.filter((id) => form.addonIds.includes(id)).forEach((id) => body.append("defaultAddonIds", id));
@@ -75,6 +79,7 @@ export default function DrinkManager({ initialDrinks, addons }: { initialDrinks:
         <label>Short description<textarea value={form.description} onChange={(event) => updateForm("description", event.target.value)} required rows={3} /></label>
         <label>Base price (dollars)<input value={form.price} onChange={(event) => updateForm("price", event.target.value)} type="number" min="0" step="0.01" required /></label>
         <label className="checkbox-label"><input type="checkbox" checked={form.seasonal} onChange={(event) => updateForm("seasonal", event.target.checked)} /> Feature in seasonal drinks</label>
+        <fieldset className="admin-customization-options"><legend>Available temperatures</legend><p className="form-help">Choose whether this drink can be served hot, cold, or both.</p><label className="checkbox-label"><input type="checkbox" checked={form.supportsHot} onChange={(event) => updateForm("supportsHot", event.target.checked)} /> Hot</label><label className="checkbox-label"><input type="checkbox" checked={form.supportsCold} onChange={(event) => updateForm("supportsCold", event.target.checked)} /> Cold</label></fieldset>
         <fieldset className="admin-customization-options"><legend>Available customizations</legend><p className="form-help">Select the options customers can use. Check “default” for options already included with this drink.</p>
           {availableAddons.length === 0 ? <p>No customizations have been created yet.</p> : availableAddons.map((addon) => <label className="customization-admin-row" key={addon.id}><span><input type="checkbox" checked={form.addonIds.includes(addon.id)} onChange={(event) => updateForm("addonIds", event.target.checked ? [...form.addonIds, addon.id] : form.addonIds.filter((id) => id !== addon.id))} /><span className="customization-name">{addon.name}</span><small>{categoryLabels[addon.category || "OTHER"]}</small></span><span><input type={addon.category === "MILK" ? "radio" : "checkbox"} name={addon.category === "MILK" ? "default-milk" : undefined} aria-label={`Default ${addon.name}`} checked={form.defaultAddonIds.includes(addon.id)} disabled={!form.addonIds.includes(addon.id)} onChange={(event) => updateForm("defaultAddonIds", addon.category === "MILK" ? (event.target.checked ? [...form.defaultAddonIds.filter((id) => !availableAddons.some((item) => item.id === id && item.category === "MILK")), addon.id] : form.defaultAddonIds.filter((id) => id !== addon.id)) : (event.target.checked ? [...form.defaultAddonIds, addon.id] : form.defaultAddonIds.filter((id) => id !== addon.id)))} /> default</span></label>)}
         </fieldset>

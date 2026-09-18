@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { formatMoney, lineTotalCents, orderTotalCents, type Addon, type AddonCategory, type CartItem, type Drink } from "@/lib/order";
+import { formatMoney, lineTotalCents, orderTotalCents, type Addon, type AddonCategory, type CartItem, type Drink, type Temperature } from "@/lib/order";
 
 type Confirmation = {
   orderId: string;
   customerName: string;
   totalCents: number;
-  items: Array<{ drinkName: string; quantity: number; unitPriceCents: number; addons: Array<{ name: string; priceCents: number }> }>;
+  items: Array<{ drinkName: string; quantity: number; unitPriceCents: number; temperature: Temperature; addons: Array<{ name: string; priceCents: number }> }>;
 };
 
 const customizationGroups: Array<{ category: AddonCategory; label: string; instruction: string }> = [
@@ -24,6 +24,9 @@ function availableAddons(drink: Drink, allAddons: Addon[]): Addon[] {
 function defaultAddons(drink: Drink): Addon[] {
   return (drink.customizations || []).filter((addon) => addon.defaultSelected);
 }
+
+function defaultTemperature(drink: Drink): Temperature { return drink.supportsHot !== false ? "HOT" : "COLD"; }
+function temperatureLabel(temperature: Temperature): string { return temperature === "HOT" ? "Hot" : "Cold"; }
 
 function CustomizationOptions({ drink, allAddons, selected, onToggle, idPrefix }: { drink: Drink; allAddons: Addon[]; selected: Addon[]; onToggle: (addon: Addon, checked: boolean) => void; idPrefix: string }) {
   const options = availableAddons(drink, allAddons);
@@ -55,6 +58,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAddons, setSelectedAddons] = useState<Record<string, Addon[]>>({});
+  const [selectedTemperatures, setSelectedTemperatures] = useState<Record<string, Temperature>>({});
   const [customizingDrinkId, setCustomizingDrinkId] = useState<string | null>(null);
   const [editingCartIndex, setEditingCartIndex] = useState<number | null>(null);
   const total = useMemo(() => orderTotalCents(cart), [cart]);
@@ -62,10 +66,11 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
   function openCustomizer(drink: Drink) {
     setCustomizingDrinkId(drink.id);
     setSelectedAddons((current) => current[drink.id] ? current : { ...current, [drink.id]: defaultAddons(drink) });
+    setSelectedTemperatures((current) => current[drink.id] ? current : { ...current, [drink.id]: defaultTemperature(drink) });
   }
 
   function add(drink: Drink) {
-    setCart((current) => [...current, { drink, addons: selectedAddons[drink.id] || [], quantity: 1 }]);
+    setCart((current) => [...current, { drink, addons: selectedAddons[drink.id] || [], quantity: 1, temperature: selectedTemperatures[drink.id] || defaultTemperature(drink) }]);
     setCustomizingDrinkId(null);
     setSelectedAddons((current) => { const next = { ...current }; delete next[drink.id]; return next; });
   }
@@ -73,6 +78,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
   function cancelCustomization(drinkId: string) {
     setCustomizingDrinkId(null);
     setSelectedAddons((current) => { const next = { ...current }; delete next[drinkId]; return next; });
+    setSelectedTemperatures((current) => { const next = { ...current }; delete next[drinkId]; return next; });
   }
 
   function changeQuantity(index: number, amount: number) {
@@ -123,7 +129,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerName: name.trim(), items: cart.map((item) => ({ drinkId: item.drink.id, addonIds: item.addons.map((addon) => addon.id), quantity: item.quantity })) }),
+        body: JSON.stringify({ customerName: name.trim(), items: cart.map((item) => ({ drinkId: item.drink.id, addonIds: item.addons.map((addon) => addon.id), quantity: item.quantity, temperature: item.temperature })) }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "We could not submit your order.");
@@ -142,6 +148,7 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
     setName("");
     setSubmitError("");
     setSelectedAddons({});
+    setSelectedTemperatures({});
     setCustomizingDrinkId(null);
     setEditingCartIndex(null);
   }
@@ -157,12 +164,13 @@ export default function MenuClient({ drinks, addons }: { drinks: Drink[]; addons
   const standardDrinks = drinks.filter((drink) => !drink.seasonal);
   const renderDrink = (drink: Drink) => {
     const drinkSelectedAddons = selectedAddons[drink.id] || defaultAddons(drink);
-    const previewItem = { drink, addons: drinkSelectedAddons, quantity: 1 };
+    const selectedTemperature = selectedTemperatures[drink.id] || defaultTemperature(drink);
+    const previewItem = { drink, addons: drinkSelectedAddons, quantity: 1, temperature: selectedTemperature };
     const isCustomizing = customizingDrinkId === drink.id;
-    return <article className="card" key={drink.id}><div className="card-details"><h3>{drink.name}</h3><p>{drink.description}</p><strong>{formatMoney(lineTotalCents(previewItem))}</strong>{isCustomizing && <div className="customization-panel"><h4>Customization</h4><p className="form-help">Choose the options you want. Defaults are already selected.</p><CustomizationOptions drink={drink} allAddons={addons} selected={drinkSelectedAddons} onToggle={(addon, checked) => toggleDrinkAddon(drink.id, addon, checked)} idPrefix={`drink-${drink.id}`} />{drinkSelectedAddons.length > 0 && <p className="customized-price">This drink: {formatMoney(lineTotalCents(previewItem))}</p>}</div>}</div><div className="card-actions">{isCustomizing ? <><button type="button" onClick={() => add(drink)}>Add to order</button><button type="button" className="secondary" onClick={() => cancelCustomization(drink.id)}>Cancel</button></> : <button type="button" onClick={() => openCustomizer(drink)}>Customize</button>}</div></article>;
+    return <article className="card" key={drink.id}><div className="card-details"><h3>{drink.name}</h3><p>{drink.description}</p><strong>{formatMoney(lineTotalCents(previewItem))}</strong>{isCustomizing && <div className="customization-panel"><h4>Customization</h4><p className="form-help">Choose the options you want. Defaults are already selected.</p><fieldset className="customization-group"><legend>Temperature</legend>{drink.supportsHot !== false && <label className="customization-option"><input type="radio" name={`drink-${drink.id}-temperature`} checked={selectedTemperature === "HOT"} onChange={() => setSelectedTemperatures((current) => ({ ...current, [drink.id]: "HOT" }))} /><span>Hot</span></label>}{drink.supportsCold !== false && <label className="customization-option"><input type="radio" name={`drink-${drink.id}-temperature`} checked={selectedTemperature === "COLD"} onChange={() => setSelectedTemperatures((current) => ({ ...current, [drink.id]: "COLD" }))} /><span>Cold</span></label>}</fieldset><CustomizationOptions drink={drink} allAddons={addons} selected={drinkSelectedAddons} onToggle={(addon, checked) => toggleDrinkAddon(drink.id, addon, checked)} idPrefix={`drink-${drink.id}`} />{drinkSelectedAddons.length > 0 && <p className="customized-price">This drink: {formatMoney(lineTotalCents(previewItem))}</p>}</div>}</div><div className="card-actions">{isCustomizing ? <><button type="button" onClick={() => add(drink)}>Add to order</button><button type="button" className="secondary" onClick={() => cancelCustomization(drink.id)}>Cancel</button></> : <button type="button" onClick={() => openCustomizer(drink)}>Customize</button>}</div></article>;
   };
 
-  return <main className="shell"><header><h1 className="eyebrow">Sweet Lavendar cafe</h1><p>Order ahead for pickup. All drinks are 12 oz and available hot or cold.</p></header>
+  return <main className="shell"><header><h1 className="eyebrow">Sweet Lavendar cafe</h1><p>Order ahead for pickup. Choose the temperature available for each drink.</p></header>
     <section className="content" aria-label="Menu and order"><div>
       {seasonalDrinks.length > 0 && <section className="menu-section"><h2>Seasonal drinks</h2><div className="menu">{seasonalDrinks.map(renderDrink)}</div></section>}
       {standardDrinks.length > 0 && <section className="menu-section"><h2>Standard menu</h2><div className="menu">{standardDrinks.map(renderDrink)}</div></section>}

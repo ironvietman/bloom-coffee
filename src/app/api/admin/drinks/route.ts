@@ -9,6 +9,8 @@ function parseDrink(form: FormData) {
 
   if (!name || !description || !Number.isInteger(basePriceCents) || basePriceCents < 0) return null;
   const hasCustomizationConfig = form.has("seasonal") || form.getAll("addonIds").length > 0 || form.has("customizationsConfigured");
+  const hasTemperatureConfig = form.has("supportsHot") || form.has("supportsCold");
+  if (hasTemperatureConfig && form.get("supportsHot") !== "true" && form.get("supportsCold") !== "true") return null;
   const addonIds = form.getAll("addonIds").map(String);
   const defaultAddonIds = new Set(form.getAll("defaultAddonIds").map(String));
   return {
@@ -19,6 +21,9 @@ function parseDrink(form: FormData) {
     seasonal: form.get("seasonal") === "true",
     addonIds,
     defaultAddonIds,
+    hasTemperatureConfig,
+    supportsHot: form.get("supportsHot") === "true",
+    supportsCold: form.get("supportsCold") === "true",
   };
 }
 
@@ -41,6 +46,7 @@ export async function POST(request: Request) {
         create: parsed.addonIds.map((addonId) => ({ addon: { connect: { id: addonId } }, defaultSelected: parsed.defaultAddonIds.has(addonId) })),
       },
     } : {}),
+    ...(parsed.hasTemperatureConfig ? { supportsHot: parsed.supportsHot, supportsCold: parsed.supportsCold } : {}),
   };
   if (!drink) return NextResponse.json({ error: "Name, description, and a valid price are required." }, { status: 400 });
 
