@@ -15,8 +15,13 @@ node --version   # should print v20.x or newer
 ```bash
 npm install
 copy .env.example .env.local
+# Prisma CLI reads .env; copy the same local database settings for Prisma commands.
+copy .env.local .env
+npx prisma migrate dev --name init
 npm run dev
 ```
+
+Next.js reads `.env.local`, while Prisma CLI reads `.env`. Keep both files locally with the same `DATABASE_URL` value. Replace the placeholder `DATABASE_URL` with a real PostgreSQL connection string before running the migration. In Git Bash, use `cp` instead of `copy`.
 
 Open http://localhost:3000.
 
@@ -30,7 +35,7 @@ The admin area is available at http://localhost:3000/admin. By default, use `adm
 
 ## GitHub Actions and Vercel
 
-`.github/workflows/test.yml` runs unit tests for pull requests targeting `dev` or `main`. Vercel handles deployments through its GitHub integration. Add `DATABASE_URL` to the Vercel `Preview` and `Production` environments when database-backed routes are enabled.
+`.github/workflows/test.yml` runs unit tests for pull requests targeting `dev` or `main`. Vercel handles deployments through its GitHub integration. Add `DATABASE_URL` to the Vercel `Preview` and `Production` environments, and run the initial Prisma migration against the configured database before using the admin menu.
 
 ### Vercel setup
 

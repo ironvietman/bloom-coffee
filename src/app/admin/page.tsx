@@ -1,8 +1,16 @@
 import LogoutButton from "./logout-button";
+import DrinkManager from "./drinks/drink-manager";
+import { prisma } from "@/lib/prisma";
+import AddonManager from "./addons/addon-manager";
 
-export default function AdminPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminPage() {
+  const drinks = await prisma.drink.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } });
+  const addons = await prisma.addon.findMany({ where: { active: true }, orderBy: { createdAt: "asc" } });
   return <main className="admin-shell">
     <header className="admin-header"><div><p className="eyebrow">BLOOM COFFEE</p><h1>Admin</h1><p>Manage your menu and keep the customer experience fresh.</p></div><LogoutButton /></header>
-    <section className="admin-placeholder"><h2>Menu management</h2><p>Drink and add-on management will live here next. Your admin session is active.</p></section>
+    <DrinkManager initialDrinks={drinks} />
+    <AddonManager initialAddons={addons} />
   </main>;
 }
