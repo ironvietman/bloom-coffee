@@ -20,7 +20,10 @@ export default function AddonManager({ initialAddons }: { initialAddons: Addon[]
     const body = new FormData(); body.set("name", form.name); body.set("priceCents", String(Math.round(Number(form.price) * 100))); body.set("category", form.category);
     const response = await fetch(editingId ? `/api/admin/addons/${editingId}` : "/api/admin/addons", { method: editingId ? "PATCH" : "POST", body });
     if (!response.ok) { setError("Please enter a name and valid non-negative price."); return; }
-    const saved = await response.json() as Addon;
+    const bodyText = await response.text();
+    let saved: Addon | null = null;
+    try { saved = bodyText.trim() ? JSON.parse(bodyText) as Addon : null; } catch { saved = null; }
+    if (!saved) { setError("The server returned an empty response. Please try again."); return; }
     setAddons((current) => editingId ? current.map((addon) => addon.id === saved.id ? saved : addon) : [...current, saved]);
     window.dispatchEvent(new Event("customizations-updated"));
     setForm(emptyForm); setEditingId(null);

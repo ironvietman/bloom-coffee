@@ -41,7 +41,7 @@ After a database is provisioned, apply the committed migrations against that dat
 npx prisma migrate deploy
 ```
 
-The migration must be run once for the Preview database and once for the Production database. Vercel builds the application but does not automatically run database migrations.
+The repository's `vercel-build` script runs `prisma migrate deploy` before the Next.js build, so Vercel applies committed migrations automatically using the database configured for that deployment environment. Preview and Production still use separate databases and environment variables.
 
 ## Decision rationale
 

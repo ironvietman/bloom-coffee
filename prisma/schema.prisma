@@ -14,6 +14,11 @@ enum AddonCategory {
   OTHER
 }
 
+enum DrinkTemperature {
+  HOT
+  COLD
+}
+
 model Admin {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -28,6 +33,8 @@ model Drink {
   basePriceCents Int
   seasonal       Boolean     @default(false)
   customizationsConfigured Boolean @default(false)
+  supportsHot     Boolean     @default(true)
+  supportsCold    Boolean     @default(true)
   active         Boolean     @default(true)
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
@@ -73,6 +80,7 @@ model OrderItem {
   drinkName      String
   unitPriceCents Int
   quantity       Int
+  temperature    DrinkTemperature @default(HOT)
   addons         OrderItemAddon[]
 }
 

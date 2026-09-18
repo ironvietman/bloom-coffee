@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { parseOrderRequest, type SubmittedItem } from "@/lib/order-request";
 
@@ -48,21 +49,28 @@ export async function POST(request: Request) {
     if (milkCount > 1 || nonMilkCount > 5) {
       return NextResponse.json({ error: "Please choose no more than one milk and five other customizations." }, { status: 400 });
     }
+    const temperature = item.temperature || (drink.supportsHot !== false ? "HOT" : "COLD");
+    if ((temperature === "HOT" && drink.supportsHot === false) || (temperature === "COLD" && drink.supportsCold === false)) {
+      return NextResponse.json({ error: "That temperature is not available for this drink." }, { status: 409 });
+    }
     const unitPriceCents = drink.basePriceCents + validAddons.reduce((sum, addon) => sum + addon.priceCents, 0);
     totalCents += unitPriceCents * item.quantity;
-    orderItems.push({ drink, validAddons, unitPriceCents, quantity: item.quantity });
+    orderItems.push({ drink, validAddons, unitPriceCents, quantity: item.quantity, temperature });
   }
 
-  const order = await prisma.order.create({
+  let order: Prisma.OrderGetPayload<{ include: { items: { include: { addons: true } } } }>;
+  try {
+    order = await prisma.order.create({
     data: {
       customerName,
       totalCents,
       items: {
-        create: orderItems.map(({ drink, validAddons, unitPriceCents, quantity }) => ({
+        create: orderItems.map(({ drink, validAddons, unitPriceCents, quantity, temperature }) => ({
           drinkId: drink.id,
           drinkName: drink.name,
           unitPriceCents,
           quantity,
+          temperature,
           addons: {
             create: validAddons.map((addon) => ({
               addonId: addon.id,
@@ -74,7 +82,11 @@ export async function POST(request: Request) {
       },
     },
     include: { items: { include: { addons: true } } },
-  });
+    });
+  } catch (error) {
+    console.error("Failed to create order", error);
+    return NextResponse.json({ error: "We could not place your order. Please try again." }, { status: 500 });
+  }
 
   return NextResponse.json({
     orderId: order.id,
@@ -82,6 +94,7 @@ export async function POST(request: Request) {
     totalCents: order.totalCents,
     items: order.items.map((item) => ({
       drinkName: item.drinkName,
+      temperature: item.temperature,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,
       addons: item.addons.map((addon) => ({ name: addon.addonName, priceCents: addon.priceCents })),

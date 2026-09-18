@@ -69,7 +69,7 @@ Copy the generated value into `AUTH_SECRET` in your deployment environment. Keep
    npx prisma migrate deploy
    ```
 
-6. Push to any branch other than `main` for a Preview deployment, or merge the selected release branch to `main` for Production. Vercel will build and deploy automatically.
+6. Push to any branch other than `main` for a Preview deployment, or merge the selected release branch to `main` for Production. Vercel will run the `vercel-build` script, which applies committed Prisma migrations before building the application.
 
 Vercel creates a Preview URL for each non-`main` branch. For a stable URL such as `feature.example.com`, configure a Vercel branch domain. The `main` branch updates the Production URL.
 

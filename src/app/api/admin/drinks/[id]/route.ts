@@ -8,6 +8,8 @@ function parseDrink(form: FormData) {
   const basePriceCents = Number(form.get("basePriceCents"));
   if (!name || !description || !Number.isInteger(basePriceCents) || basePriceCents < 0) return null;
   const hasCustomizationConfig = form.has("seasonal") || form.getAll("addonIds").length > 0 || form.has("customizationsConfigured");
+  const hasTemperatureConfig = form.has("supportsHot") || form.has("supportsCold");
+  if (hasTemperatureConfig && form.get("supportsHot") !== "true" && form.get("supportsCold") !== "true") return null;
   return {
     name,
     description,
@@ -16,6 +18,9 @@ function parseDrink(form: FormData) {
     seasonal: form.get("seasonal") === "true",
     addonIds: form.getAll("addonIds").map(String),
     defaultAddonIds: new Set(form.getAll("defaultAddonIds").map(String)),
+    hasTemperatureConfig,
+    supportsHot: form.get("supportsHot") === "true",
+    supportsCold: form.get("supportsCold") === "true",
   };
 }
 
@@ -31,7 +36,7 @@ export async function PATCH(request: Request, context: Context) {
   const { id } = await context.params;
   try {
     if (!parsed.hasCustomizationConfig) {
-      const updated = await prisma.drink.update({ where: { id }, data: { name: parsed.name, description: parsed.description, basePriceCents: parsed.basePriceCents } });
+      const updated = await prisma.drink.update({ where: { id }, data: { name: parsed.name, description: parsed.description, basePriceCents: parsed.basePriceCents, ...(parsed.hasTemperatureConfig ? { supportsHot: parsed.supportsHot, supportsCold: parsed.supportsCold } : {}) } });
       return NextResponse.json(updated);
     }
     const updated = await prisma.drink.update({
@@ -46,6 +51,7 @@ export async function PATCH(request: Request, context: Context) {
           deleteMany: {},
           create: parsed.addonIds.map((addonId) => ({ addon: { connect: { id: addonId } }, defaultSelected: parsed.defaultAddonIds.has(addonId) })),
         },
+        ...(parsed.hasTemperatureConfig ? { supportsHot: parsed.supportsHot, supportsCold: parsed.supportsCold } : {}),
       },
       include: drinkInclude,
     });
