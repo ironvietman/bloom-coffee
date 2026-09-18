@@ -60,6 +60,7 @@
 .form-help { margin: 0 0 12px; font-size: .9rem; }
 .admin-customization-options { display: grid; gap: 8px; margin: 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
 .admin-customization-options legend { padding: 0 6px; font-weight: 700; }
+.temperature-options { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; }
 .drink-form .customization-admin-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: .9rem; font-weight: 400; }
 .customization-admin-row > span { display: flex; align-items: center; min-height: 28px; line-height: 1.25; }
 .customization-admin-row > span:first-child { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 6px; min-width: 0; flex: 1; }
@@ -67,7 +68,8 @@
 .customization-admin-row > span:first-child small { grid-column: 2; white-space: nowrap; }
 .customization-admin-row > span:last-child { flex: 0 0 auto; white-space: nowrap; }
 .customization-admin-row small { display: inline; margin-left: 4px; }
-.checkbox-label { display: flex !important; grid-template-columns: none !important; align-items: center; }
+.checkbox-label { display: flex !important; grid-template-columns: none !important; align-items: center; gap: 8px; }
+.checkbox-label input { margin: 0; }
 .seasonal-badge { display: inline-block; color: var(--lavender-dark); background: var(--lavender-soft); border-radius: 999px; padding: 3px 8px; font: 700 .7rem Arial, sans-serif; letter-spacing: .04em; vertical-align: middle; }
 .line-total { display: block; margin-top: 4px; font-weight: 700; }
 .quantity-controls { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
