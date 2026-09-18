@@ -224,6 +224,7 @@ Remaining release work is operational rather than a new story: finish UI polish,
 - Customer accounts.
 - Customer order history across devices.
 - Public order lookup.
+- Profanity filtering or other content moderation.
 - Password reset and public admin sign-up.
 - Multi-user database-backed admin management.
 - Production-scale GCP infrastructure.
