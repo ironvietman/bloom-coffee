@@ -21,6 +21,7 @@
 .drink-form { display: grid; gap: 16px; max-width: 620px; }
 .drink-form label { display: grid; gap: 6px; font-weight: 700; }
 .drink-form input, .drink-form textarea { margin: 0; width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 12px; font: inherit; }
+.drink-form input[type="checkbox"], .drink-form input[type="radio"] { width: auto; padding: 0; border: 0; border-radius: 0; }
 .drink-form textarea { resize: vertical; }
 .form-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .secondary { background: var(--lavender-soft); color: var(--ink); }
@@ -87,3 +88,5 @@
 @media (max-width: 520px) { .admin-header { display: block; } .admin-header button { margin-top: 18px; } }
 @media (max-width: 520px) { .admin-drink { display: block; } .admin-drink .form-actions { margin-top: 16px; } }
 @media (max-width: 800px) { .admin-management-grid { grid-template-columns: 1fr; gap: 28px; } }
+.card.is-customizing { display: block; }
+.card.is-customizing .card-actions { justify-content: flex-start; margin-top: 18px; }
